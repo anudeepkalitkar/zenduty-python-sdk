@@ -10,6 +10,8 @@ class Router(JsonSerializable):
     account: UUID
     is_enabled: bool
     integration_key: str
+    created_at: str
+    account_identifier: str
 
     def __init__(
         self,
@@ -19,6 +21,8 @@ class Router(JsonSerializable):
         account: UUID,
         is_enabled: bool,
         integration_key: str,
+        created_at: str,
+        account_identifier: str,
     ) -> None:
         self.unique_id = unique_id if isinstance(unique_id, UUID) else UUID(unique_id)
         self.name = name
@@ -26,3 +30,5 @@ class Router(JsonSerializable):
         self.account = account if isinstance(account, UUID) else UUID(account)
         self.is_enabled = is_enabled
         self.integration_key = integration_key
+        self.created_at = created_at
+        self.account_identifier = account_identifier
