@@ -30,12 +30,10 @@ class Restriction(JsonSerializable):
 class User(JsonSerializable):
     user: str
     position: int
-    unique_id: UUID
 
     def __init__(self, user: str, position: int, unique_id: Union[UUID, str]) -> None:
         self.user = user
         self.position = position
-        self.unique_id = unique_id if type(unique_id) is not str else UUID(unique_id)
 
     def to_json(self):
         return json.dumps(self, default=serialize, sort_keys=True, indent=4)
@@ -68,14 +66,10 @@ class Layer(JsonSerializable):
     ) -> None:
         self.shift_length = shift_length
         self.restrictions = (
-            restrictions
-            if type(restrictions) is not list[dict]
-            else [Restriction(**r) for r in restrictions]
+            restrictions if type(restrictions) is not list[dict] else [Restriction(**r) for r in restrictions]
         )
         self.name = name
-        self.users = (
-            users if type(users) is not list[dict] else [User(**r) for r in users]
-        )
+        self.users = users if type(users) is not list[dict] else [User(**r) for r in users]
         self.rotation_start_time = (
             rotation_start_time
             if type(rotation_start_time) is datetime
@@ -117,14 +111,10 @@ class Override(JsonSerializable):
         self.name = name
         self.user = user
         self.start_time = (
-            start_time
-            if type(start_time) is datetime
-            else datetime.fromisoformat(start_time.replace("Z", "+00:00"))
+            start_time if type(start_time) is datetime else datetime.fromisoformat(start_time.replace("Z", "+00:00"))
         )
         self.end_time = (
-            end_time
-            if type(end_time) is datetime
-            else datetime.fromisoformat(end_time.replace("Z", "+00:00"))
+            end_time if type(end_time) is datetime else datetime.fromisoformat(end_time.replace("Z", "+00:00"))
         )
         self.unique_id = unique_id if type(unique_id) is not str else UUID(unique_id)
 
@@ -141,6 +131,8 @@ class Schedule(JsonSerializable):
     layers: list[Layer]
     overrides: list[Override]
     unique_id: UUID
+    connections: int
+    shift_time_in_dst: bool
 
     def __init__(
         self,
@@ -152,21 +144,19 @@ class Schedule(JsonSerializable):
         layers: Union[list[dict], list[Layer]],
         overrides: Union[list[Override], list[dict]],
         unique_id: Union[UUID, str],
+        connections: int,
+        shift_time_in_dst: bool,
     ) -> None:
         self.name = name
         self.summary = summary
         self.description = description
         self.time_zone = time_zone
         self.team = team if type(team) is UUID else UUID(team)
-        self.layers = (
-            layers if type(layers) is not list[dict] else [Layer(**l) for l in layers]
-        )
-        self.overrides = (
-            overrides
-            if type(overrides) is not list[dict]
-            else [Override(**over) for over in overrides]
-        )
+        self.layers = layers if type(layers) is not list[dict] else [Layer(**l) for l in layers]
+        self.overrides = overrides if type(overrides) is not list[dict] else [Override(**over) for over in overrides]
         self.unique_id = unique_id if type(unique_id) is not str else UUID(unique_id)
+        self.connections = connections
+        self.shift_time_in_dst = shift_time_in_dst
 
     def to_json(self):
         return json.dumps(self, default=serialize, sort_keys=True, indent=4)

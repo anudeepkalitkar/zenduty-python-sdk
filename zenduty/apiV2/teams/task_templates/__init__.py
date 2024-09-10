@@ -18,8 +18,7 @@ class TaskTemplateClient:
         """
         response = self._client.execute(
             method=ZendutyClientRequestMethod.GET,
-            endpoint="/api/account/teams/%s/task_templates/"
-            % str(self._team.unique_id),
+            endpoint="/api/account/teams/%s/task_templates/" % str(self._team.unique_id),
             success_code=200,
         )
         return [TaskTemplate(**r) for r in response]
@@ -35,14 +34,13 @@ class TaskTemplateClient:
         """
         response = self._client.execute(
             method=ZendutyClientRequestMethod.GET,
-            endpoint="/api/account/teams/%s/task_templates/%s/"
-            % (str(self._team.unique_id), str(task_template_id)),
+            endpoint="/api/account/teams/%s/task_templates/%s/" % (str(self._team.unique_id), str(task_template_id)),
             success_code=200,
         )
         return TaskTemplate(**response)
 
     def create_task_template(
-        self, name: str, summary: str, due_immediately: int = 0, **kwargs
+        self, name: str, summary: str = None, due_immediately: int = 0, **kwargs
     ) -> TaskTemplate:
         """Create a new Task Template
 
@@ -56,8 +54,7 @@ class TaskTemplateClient:
         """
         response = self._client.execute(
             method=ZendutyClientRequestMethod.POST,
-            endpoint="/api/account/teams/%s/task_templates/"
-            % str(self._team.unique_id),
+            endpoint="/api/account/teams/%s/task_templates/" % str(self._team.unique_id),
             request_payload={
                 "name": name,
                 "summary": summary,
@@ -67,7 +64,9 @@ class TaskTemplateClient:
         )
         return self.get_task_template_by_id(UUID(response["unique_id"]))
 
-    def update_task_template(self, task_template: TaskTemplate) -> TaskTemplate:
+    def update_task_template(
+        self, task_template: TaskTemplate, name: str, summary: str = None, due_immediately: int = 0, **kwargs
+    ) -> TaskTemplate:
         """Update a TaskTemplate
 
         Args:
@@ -76,11 +75,16 @@ class TaskTemplateClient:
         Returns:
             TaskTemplate: updated TaskTemplate object
         """
+        request_payload = {
+            "name": name,
+            "summary": summary,
+            "due_immediately": due_immediately,
+        }
         response = self._client.execute(
             method=ZendutyClientRequestMethod.PUT,
             endpoint="/api/account/teams/%s/task_templates/%s/"
             % (str(self._team.unique_id), str(task_template.unique_id)),
-            request_payload=json.loads(task_template.to_json()),
+            request_payload=request_payload,
             success_code=200,
         )
         return self.get_task_template_by_id(UUID(response["unique_id"]))

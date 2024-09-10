@@ -1,43 +1,9 @@
-import json
 from uuid import UUID
-
 from .notes import IncidentNoteClient
 from .tags import IncidentTagClient
 from ..client import ZendutyClient, ZendutyClientRequestMethod
 from .models import Incident
 from ..events.models import Event
-
-
-class __IncidentItr__:
-    """The incident list iterator implementation for paginated incidents"""
-
-    def __init__(self, client: ZendutyClient, results: list, next: str, pos: int = 0):
-        self._client = client
-        self.results = results
-        self.next = next
-        self.pos = pos
-
-    def __iter__(self):
-        return self
-
-    def __next__(self):
-        if len(self.results) == self.pos:
-            if self.next is None:
-                raise StopIteration
-            val = 0
-            for _ in range(0, 3):
-                val = self.next.find("/", val + 1)
-            response = self._client.execute(
-                method=ZendutyClientRequestMethod.GET,
-                endpoint=self.next[val:],
-                success_code=200,
-            )
-            self.next = response["next"]
-            self.pos = 0
-            self.results = response["results"]
-        v = self.results[self.pos]
-        self.pos += 1
-        return Incident(**v)
 
 
 class IncidentClient:
@@ -53,7 +19,7 @@ class IncidentClient:
         """Reutrns the Incident Notes client
 
         Args:
-            incident (Incident): the incident object for which the notes client has to be fetched
+            Incident_id (str): the incident  object for which the notes client has to be fetched
 
         Returns:
             IncidentNoteClient: The IncidentNoteClient object is returned which can be used to perform various operations on incident notes.
@@ -64,55 +30,85 @@ class IncidentClient:
         """Reutrns the Incident Tags client
 
         Args:
-            incident (Incident): the incident object for which the tags client has to be fetched
+            Incident_id (str): the incident  for which the tags client has to be fetched
 
         Returns:
             IncidentTagClient: The IncidentTagClient object is returned which can be used to perform various operations on incident tags.
         """
-
         return IncidentTagClient(self._client, incident)
 
-    def get_all_incidents(self) -> __IncidentItr__:
-        """Returns a iterator for all the incidents
+    def get_all_incidents(
+        self,
+        page=1,
+        page_size=10,
+        all_teams=1,
+        escalation_policy_ids=None,
+        from_date=None,
+        postmortem_filter=-1,
+        priority_ids=None,
+        priority_name=None,
+        service_ids=None,
+        sla_ids=None,
+        status=1,
+        tag_ids=None,
+        team_ids=None,
+        to_date=None,
+        user_ids=None,
+    ) -> list[Incident]:
+        """Returns the list of incidents with optional filters"""
+        payload = {
+            "status": status,
+            "all_teams": all_teams,
+            "postmortem_filter": postmortem_filter,
+            "page": page,
+            "page_size": page_size,
+        }
+        if escalation_policy_ids is not None:
+            payload["escalation_policy_ids"] = escalation_policy_ids
+        if from_date:
+            payload["from_date"] = from_date
+        if priority_ids is not None:
+            payload["priority_ids"] = priority_ids
+        if priority_name:
+            payload["priority_name"] = priority_name
+        if service_ids is not None:
+            payload["service_ids"] = service_ids
+        if sla_ids is not None:
+            payload["sla_ids"] = sla_ids
+        if tag_ids is not None:
+            payload["tag_ids"] = tag_ids
+        if team_ids is not None:
+            payload["team_ids"] = team_ids
+        if to_date:
+            payload["to_date"] = to_date
+        if user_ids is not None:
+            payload["user_ids"] = user_ids
 
-        Returns:
-            __IncidentItr__: the iterator for incidents list
-        """
         response = self._client.execute(
-            method=ZendutyClientRequestMethod.GET,
-            endpoint="/api/incidents/",
+            method=ZendutyClientRequestMethod.POST,
+            endpoint="/api/incidents/filter/?page=%s&page_size=%s" % (page, page_size),
+            request_payload=payload,
             success_code=200,
         )
-        return __IncidentItr__(self._client, response["results"], response["next"])
+        return response.get("results", [])
 
-    def get_incident_by_incident_number(self, incident_number: int) -> Incident:
-        """Return a Incident by incident number
+    def get_incident_by_unique_id_or_incident_number(self, incident_id: str) -> Incident:
+        """Return a Incident by its unique_id
 
         Args:
-            incident_number (int): the incident number for which to retrieve the incident
+            incident_id (str): the incident number or incident unique id for which to retrieve the incident
 
         Returns:
             Incident: The returned Incident object
         """
         response = self._client.execute(
             method=ZendutyClientRequestMethod.GET,
-            endpoint="/api/incidents/%d/" % incident_number,
+            endpoint="/api/incidents/%s/" % incident_id,
             success_code=200,
         )
         return Incident(**response)
 
-    def create_incident(
-        self,
-        summary: str,
-        title: str,
-        service: UUID,
-        assigned_to: UUID,
-        escalation_policy: UUID,
-        sla: UUID,
-        team_priority: UUID,
-        status: int = 1,
-        **kwargs
-    ) -> Incident:
+    def create_incident(self, title: str, service: UUID) -> Incident:
         """Create a new incident
 
         Args:
@@ -131,33 +127,45 @@ class IncidentClient:
         response = self._client.execute(
             method=ZendutyClientRequestMethod.POST,
             endpoint="/api/incidents/",
-            request_payload={
-                "summary": summary,
-                "status": status,
-                "title": title,
-                "service": (service),
-                "assigned_to": (assigned_to),
-                "escalation_policy": (escalation_policy),
-                "sla": (sla),
-                "team_priority": (team_priority),
-            },
+            request_payload={"title": title, "service": (service)},
             success_code=201,
         )
         return Incident(**response)
 
-    def update_incident(self, incident: Incident) -> Incident:
-        """Updates the incident object attributes with the specified incident number
+    def update_incident(
+        self,
+        incident_id: Incident,
+        service: UUID,
+        title: str = None,
+        summary: str = None,
+        status: int = None,
+    ) -> Incident:
+        """Updates the incident object attributes with the specified incident number. Uses existing values if new ones are not provided.
 
         Args:
-            incident (Incident): Incident object with updated fields
+            incident_id (str): The incident number or incident unique id of the incident to update.
+            title (str, optional): New title for the incident. Defaults to None.
+            summary (str, optional): New summary for the incident. Defaults to None.
+            status (int, optional): New status for the incident. Defaults to None.
 
         Returns:
-            Incident: The updated incident object
+            Incident: The updated incident object.
         """
+        current_incident = self.get_incident_by_unique_id_or_incident_number(incident_id)
+
+        if title is None:
+            title = current_incident.title
+        if summary is None:
+            summary = current_incident.summary
+        if status is None:
+            status = current_incident.status
+
+        request_payload = {"title": title, "summary": summary, "status": status, "service": service}
+
         response = self._client.execute(
             method=ZendutyClientRequestMethod.PUT,
-            endpoint="/api/incidents/%d/" % incident.incident_number,
-            request_payload=json.loads(incident.to_json()),
+            endpoint=f"/api/incidents/{incident_id}/",
+            request_payload=request_payload,
             success_code=200,
         )
         return Incident(**response)
@@ -176,4 +184,4 @@ class IncidentClient:
             endpoint="/api/incidents/%d/alerts/" % incident_number,
             success_code=200,
         )
-        return [Event(**r) for r in response]
+        return [Event(**r) for r in response["results"]]

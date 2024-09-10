@@ -34,15 +34,12 @@ class IncidentRoleClient:
         """
         response = self._client.execute(
             method=ZendutyClientRequestMethod.GET,
-            endpoint="/api/account/teams/%s/roles/%s/"
-            % (str(self._team.unique_id), str(role_id)),
+            endpoint="/api/account/teams/%s/roles/%s/" % (str(self._team.unique_id), str(role_id)),
             success_code=200,
         )
         return IncidentRole(**response)
 
-    def create_incident_role(
-        self, title: str, description: str, rank: int = 1, **kwargs
-    ) -> IncidentRole:
+    def create_incident_role(self, title: str, description: str = None, rank: int = 1) -> IncidentRole:
         """Create a incident role by title, description, rank
 
         Args:
@@ -55,7 +52,7 @@ class IncidentRoleClient:
         """
         response = self._client.execute(
             method=ZendutyClientRequestMethod.POST,
-            endpoint="/api/account/teams/%s/services/" % str(self._team.unique_id),
+            endpoint="/api/account/teams/%s/roles/" % str(self._team.unique_id),
             request_payload={
                 "description": description,
                 "title": title,
@@ -65,20 +62,29 @@ class IncidentRoleClient:
         )
         return IncidentRole(**response)
 
-    def update_incident_role(self, role: IncidentRole) -> IncidentRole:
+    def update_incident_role(
+        self, role: IncidentRole, title: str, description: str = None, rank: int = None
+    ) -> IncidentRole:
         """Update the incident role
 
         Args:
             role (IncidentRole): Incident role to update
+            title (str): New title for the role
+            description (str, optional): New description for the role. Defaults to None.
+            rank (int, optional): New rank for the role. Defaults to None.
 
         Returns:
             IncidentRole: Updated incident role
         """
+        request_payload = {
+            "title": title,
+            "description": description if description is not None else role.description,
+            "rank": rank if rank is not None else role.rank,
+        }
         response = self._client.execute(
             method=ZendutyClientRequestMethod.PUT,
-            endpoint="/api/account/teams/%s/roles/%s/"
-            % (str(self._team.unique_id), str(role.unique_id)),
-            request_payload=json.loads(role.to_json()),
+            endpoint="/api/account/teams/%s/roles/%s/" % (str(self._team.unique_id), str(role.unique_id)),
+            request_payload=request_payload,
             success_code=200,
         )
         return IncidentRole(**response)
@@ -91,7 +97,6 @@ class IncidentRoleClient:
         """
         self._client.execute(
             method=ZendutyClientRequestMethod.DELETE,
-            endpoint="/api/account/teams/%s/roles/%s/"
-            % (str(self._team.unique_id), str(role.unique_id)),
+            endpoint="/api/account/teams/%s/roles/%s/" % (str(self._team.unique_id), str(role.unique_id)),
             success_code=204,
         )

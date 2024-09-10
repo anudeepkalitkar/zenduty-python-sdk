@@ -36,8 +36,7 @@ class TeamMaintenanceClient:
         """
         response = self._client.execute(
             method=ZendutyClientRequestMethod.GET,
-            endpoint="/api/account/teams/%s/maintenance/%s/"
-            % (str(self._team.unique_id), str(maintenance_id)),
+            endpoint="/api/account/teams/%s/maintenance/%s/" % (str(self._team.unique_id), str(maintenance_id)),
             success_code=200,
         )
         return TeamMaintenance(**response)
@@ -47,11 +46,10 @@ class TeamMaintenanceClient:
         name: str,
         start_time: datetime,
         end_time: datetime,
-        repeat_interval: int = 0,
-        service_ids: list[UUID] = [],
+        service_ids: list[UUID],
         time_zone: str = "UTC",
+        repeat_interval: int = 0,
         repeat_until: Optional[int] = None,
-        **kwargs
     ) -> TeamMaintenance:
         """Create a new team maintenance object
 
@@ -72,20 +70,28 @@ class TeamMaintenanceClient:
             endpoint="/api/account/teams/%s/maintenance/" % str(self._team.unique_id),
             request_payload={
                 "name": name,
-                "start_time": start_time.isoformat(),
-                "end_time": end_time.isoformat(),
+                "start_time": start_time,
+                "end_time": end_time,
                 "repeat_interval": repeat_interval,
                 "services": [{"service": svc_id} for svc_id in service_ids],
                 "time_zone": time_zone,
-                "repeat_until": repeat_until
-                if repeat_until is None
-                else repeat_until.isoformat(),
+                "repeat_until": repeat_until if repeat_until is None else repeat_until.isoformat(),
             },
             success_code=201,
         )
         return TeamMaintenance(**response)
 
-    def update_maintenance(self, maintenance: TeamMaintenance) -> TeamMaintenance:
+    def update_maintenance(
+        self,
+        maintenance: TeamMaintenance,
+        name: str,
+        start_time: datetime,
+        end_time: datetime,
+        service_ids: list[UUID],
+        time_zone: str = "UTC",
+        repeat_interval: int = 0,
+        repeat_until: Optional[int] = None,
+    ) -> TeamMaintenance:
         """Update a team maintenance object
 
         Args:
@@ -94,11 +100,20 @@ class TeamMaintenanceClient:
         Returns:
             TeamMaintenance: updated team maintenance object
         """
+        request_payload = {
+            "name": name,
+            "start_time": start_time,
+            "end_time": end_time,
+            "repeat_interval": repeat_interval,
+            "services": [{"service": svc_id} for svc_id in service_ids],
+            "time_zone": time_zone,
+            "repeat_until": repeat_until if repeat_until is None else repeat_until.isoformat(),
+        }
         response = self._client.execute(
             method=ZendutyClientRequestMethod.PUT,
             endpoint="/api/account/teams/%s/maintenance/%s/"
             % (str(self._team.unique_id), str(maintenance.unique_id)),
-            request_payload=json.loads(maintenance.to_json()),
+            request_payload=request_payload,
             success_code=200,
         )
         return TeamMaintenance(**response)

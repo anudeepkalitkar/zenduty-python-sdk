@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID
-from typing import List, Any
-
+from typing import List, Any, Union
+import json
 from zenduty.apiV2.serializer import JsonSerializable
 
 
@@ -43,6 +43,32 @@ class IntegrationObject(JsonSerializable):
         self.integration_type = integration_type
 
 
+class Payload:
+    status: str
+    severity: str
+    project: str
+
+    def __init__(self, status: str, severity: str, project: str) -> None:
+        self.status = status
+        self.severity = severity
+        self.project = project
+
+    def to_json(self) -> str:
+        return json.dumps(self.__dict__)
+
+
+class URL:
+    link_url: str
+    link_text: str
+
+    def __init__(self, link_url: str, link_text: str) -> None:
+        self.link_url = link_url
+        self.link_text = link_text
+
+    def to_json(self) -> str:
+        return json.dumps(self.__dict__)
+
+
 class Event(JsonSerializable):
     integration_object: IntegrationObject
     summary: str
@@ -52,12 +78,13 @@ class Event(JsonSerializable):
     integration: UUID
     suppressed: bool
     entity_id: str
-    payload: str
     alert_type: int
     unique_id: str
     images: List[Any]
-    urls: List[Any]
     notes: List[Any]
+    payload: Payload
+    urls: List[URL]
+    incident_created: bool
 
     def __init__(
         self,
@@ -69,12 +96,13 @@ class Event(JsonSerializable):
         integration: UUID,
         suppressed: bool,
         entity_id: str,
-        payload: str,
         alert_type: int,
         unique_id: str,
         images: List[Any],
-        urls: List[Any],
         notes: List[Any],
+        urls: List[Union[URL, dict]],
+        payload: Union[Payload, dict] = None,
+        incident_created: bool = None,
     ) -> None:
         self.integration_object = (
             integration_object
@@ -92,9 +120,10 @@ class Event(JsonSerializable):
         self.integration = str(integration)
         self.suppressed = suppressed
         self.entity_id = entity_id
-        self.payload = payload
         self.alert_type = alert_type
         self.unique_id = unique_id
         self.images = images
-        self.urls = urls
         self.notes = notes
+        self.payload = payload
+        self.urls = urls
+        self.incident_created = incident_created

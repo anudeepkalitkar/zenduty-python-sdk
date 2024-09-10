@@ -1,40 +1,8 @@
-import json
 from uuid import UUID
 from ....client import ZendutyClient, ZendutyClientRequestMethod
 from ..._models import Team
 from ..models import Service
-from .models import Integration, IntegrationAlert
-from datetime import datetime
-
-
-class __alertsItr__:
-    def __init__(self, client: ZendutyClient, results: list, next: str, pos: int = 0):
-        self._client = client
-        self.results = results
-        self.next = next
-        self.pos = pos
-
-    def __iter__(self):
-        return self
-
-    def __next__(self):
-        if len(self.results) == self.pos:
-            if self.next is None:
-                raise StopIteration
-            val = 0
-            for _ in range(0, 3):
-                val = self.next.find("/", val + 1)
-            response = self._client.execute(
-                method=ZendutyClientRequestMethod.GET,
-                endpoint=self.next[val:],
-                success_code=200,
-            )
-            self.next = response["next"]
-            self.pos = 0
-            self.results = response["results"]
-        v = self.results[self.pos]
-        self.pos += 1
-        return IntegrationAlert(**v)
+from .models import Integration
 
 
 class IntegrationClient:
@@ -74,7 +42,7 @@ class IntegrationClient:
         )
         return Integration(**response)
 
-    def get_intg_alerts_iter(self, intg: Integration) -> __alertsItr__:
+    def get_intg_alerts_iter(self, intg: Integration, page=1) -> list:
         """Get a integration alerts iterator.
 
 
@@ -86,22 +54,22 @@ class IntegrationClient:
         """
         response = self._client.execute(
             method=ZendutyClientRequestMethod.GET,
-            endpoint="/api/account/teams/%s/services/%s/integrations/%s/alerts"
+            endpoint="/api/account/teams/%s/services/%s/integrations/%s/alerts/?page=%s"
             % (
                 str(self._team.unique_id),
                 str(self._svc.unique_id),
                 str(intg.unique_id),
+                int(page),
             ),
             success_code=200,
         )
-        return __alertsItr__(self._client, response["results"], response["next"])
+        return response["results"]
 
     def create_intg(
         self,
         name: str,
         summary: str,
         application: UUID,
-        escalation_policy: UUID,
         default_urgency: int = 1,
         integration_type: int = 0,
         create_incidents_for: int = 1,
@@ -130,7 +98,6 @@ class IntegrationClient:
             request_payload={
                 "name": name,
                 "summary": summary,
-                "escalation_policy": escalation_policy,
                 "application": application,
                 "default_urgency": default_urgency,
                 "integration_type": integration_type,
@@ -143,7 +110,18 @@ class IntegrationClient:
         )
         return self.get_intg_by_id(response["unique_id"])
 
-    def update_intg(self, intg: Integration) -> Integration:
+    def update_intg(
+        self,
+        intg: Integration,
+        name: str,
+        application: UUID,
+        summary: str = None,
+        default_urgency: int = 1,
+        integration_type: int = 0,
+        create_incidents_for: int = 1,
+        is_enabled: bool = True,
+        **kwargs
+    ) -> Integration:
         """Update the integration provided
 
         Args:
@@ -152,6 +130,18 @@ class IntegrationClient:
         Returns:
             Integration: Updated integration object
         """
+        request_payload = {
+            "name": name,
+            "summary": summary,
+            "application": application,
+            "default_urgency": default_urgency,
+            "integration_type": integration_type,
+            "create_incidents_for": create_incidents_for,
+            "is_enabled": is_enabled,
+            "team_priority": None,
+            "sla": None,
+        }
+
         response = self._client.execute(
             method=ZendutyClientRequestMethod.PUT,
             endpoint="/api/account/teams/%s/services/%s/integrations/%s/"
@@ -160,7 +150,7 @@ class IntegrationClient:
                 str(self._svc.unique_id),
                 str(intg.unique_id),
             ),
-            request_payload=json.loads(intg.to_json()),
+            request_payload=request_payload,
             success_code=200,
         )
         return Integration(**response)

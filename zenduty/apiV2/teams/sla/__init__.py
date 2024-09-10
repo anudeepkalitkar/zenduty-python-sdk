@@ -34,8 +34,7 @@ class SLAClient:
         """
         response = self._client.execute(
             method=ZendutyClientRequestMethod.GET,
-            endpoint="/api/account/teams/%s/sla/%s/"
-            % (str(self._team.unique_id), str(sla_id)),
+            endpoint="/api/account/teams/%s/sla/%s/" % (str(self._team.unique_id), str(sla_id)),
             success_code=200,
         )
         return SLA(**response)
@@ -43,9 +42,10 @@ class SLAClient:
     def create_sla(
         self,
         name: str,
-        is_active: bool,
-        acknowledge_time: int,
-        resolve_time: int,
+        escalations: list,
+        is_active: bool = True,
+        acknowledge_time: int = None,
+        resolve_time: int = None,
         **kwargs
     ) -> SLA:
         """Create a new SLA object
@@ -65,6 +65,7 @@ class SLAClient:
             request_payload={
                 "name": name,
                 "is_active": is_active,
+                "escalations": escalations,
                 "acknowledge_time": acknowledge_time,
                 "resolve_time": resolve_time,
                 "escalations": kwargs.get("escalations", []),
@@ -73,7 +74,16 @@ class SLAClient:
         )
         return SLA(**response)
 
-    def update_sla(self, sla: SLA) -> SLA:
+    def update_sla(
+        self,
+        sla: SLA,
+        name: str,
+        escalations: list,
+        is_active: bool = True,
+        acknowledge_time: int = None,
+        resolve_time: int = None,
+        **kwargs
+    ) -> SLA:
         """Update a SLA object
 
         Args:
@@ -82,11 +92,18 @@ class SLAClient:
         Returns:
             SLA: updated SLA object
         """
+        request_payload = {
+            "name": name,
+            "is_active": is_active,
+            "escalations": escalations,
+            "acknowledge_time": acknowledge_time,
+            "resolve_time": resolve_time,
+            "escalations": kwargs.get("escalations", []),
+        }
         response = self._client.execute(
             method=ZendutyClientRequestMethod.PUT,
-            endpoint="/api/account/teams/%s/sla/%s/"
-            % (str(self._team.unique_id), str(sla.unique_id)),
-            request_payload=json.loads(sla.to_json()),
+            endpoint="/api/account/teams/%s/sla/%s/" % (str(self._team.unique_id), str(sla.unique_id)),
+            request_payload=request_payload,
             success_code=200,
         )
         return SLA(**response)
@@ -99,7 +116,6 @@ class SLAClient:
         """
         self._client.execute(
             method=ZendutyClientRequestMethod.DELETE,
-            endpoint="/api/account/teams/%s/sla/%s/"
-            % (str(self._team.unique_id), str(sla.unique_id)),
+            endpoint="/api/account/teams/%s/sla/%s/" % (str(self._team.unique_id), str(sla.unique_id)),
             success_code=204,
         )

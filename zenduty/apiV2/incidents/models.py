@@ -87,9 +87,7 @@ class IncidentAlert(JsonSerializable):
             else datetime.fromisoformat(creation_date.replace("Z", "+00:00"))
         )
         self.message = message
-        self.integration = (
-            integration if type(integration) is not str else UUID(integration)
-        )
+        self.integration = integration if type(integration) is not str else UUID(integration)
         self.suppressed = suppressed
         self.entity_id = entity_id
         self.alert_type = alert_type
@@ -102,10 +100,12 @@ class IncidentAlert(JsonSerializable):
 class EscalationPolicyObject(JsonSerializable):
     unique_id: UUID
     name: str
+    team: UUID
 
-    def __init__(self, unique_id: UUID, name: str) -> None:
+    def __init__(self, unique_id: UUID, name: str, team: UUID) -> None:
         self.unique_id = unique_id if type(unique_id) is not str else UUID(unique_id)
         self.name = name
+        self.team = team if type(team) is not str else UUID(team)
 
     def to_json(self):
         return json.dumps(self, default=serialize, sort_keys=True, indent=4)
@@ -122,6 +122,7 @@ class ServiceObject(JsonSerializable):
     team_priority: UUID
     task_template: UUID
     acknowledgement_timeout: int
+    acknowledgement_timeout_enabled: bool
     status: int
     escalation_policy: UUID
     team: UUID
@@ -150,6 +151,7 @@ class ServiceObject(JsonSerializable):
         collation: int,
         under_maintenance: bool,
         team_name: Optional[str],
+        acknowledgement_timeout_enabled: bool,
     ) -> None:
         self.name = name
         self.creation_date = (
@@ -162,25 +164,18 @@ class ServiceObject(JsonSerializable):
         self.unique_id = unique_id if type(unique_id) is not str else UUID(unique_id)
         self.auto_resolve_timeout = auto_resolve_timeout
         self.created_by = created_by
-        self.team_priority = (
-            team_priority if type(team_priority) is not str else UUID(team_priority)
-        )
-        self.task_template = (
-            task_template if type(task_template) is not str else UUID(task_template)
-        )
+        self.team_priority = team_priority if type(team_priority) is not str else UUID(team_priority)
+        self.task_template = task_template if type(task_template) is not str else UUID(task_template)
         self.acknowledgement_timeout = acknowledgement_timeout
         self.status = status
-        self.escalation_policy = (
-            escalation_policy
-            if type(escalation_policy) is not str
-            else UUID(escalation_policy)
-        )
+        self.escalation_policy = escalation_policy if type(escalation_policy) is not str else UUID(escalation_policy)
         self.team = team if type(team) is not str else UUID(team)
         self.sla = sla if type(sla) is not str else UUID(sla)
         self.collation_time = collation_time
         self.collation = collation
         self.under_maintenance = under_maintenance
         self.team_name = team_name
+        self.acknowledgement_timeout_enabled = acknowledgement_timeout_enabled
 
 
 class SlaObject(JsonSerializable):
@@ -221,9 +216,7 @@ class TeamPriorityObject(JsonSerializable):
     description: str
     color: str
 
-    def __init__(
-        self, unique_id: UUID, name: str, description: str, color: str
-    ) -> None:
+    def __init__(self, unique_id: UUID, name: str, description: str, color: str) -> None:
         self.unique_id = unique_id if type(unique_id) is not str else UUID(unique_id)
         self.name = name
         self.description = description
@@ -258,6 +251,13 @@ class Incident(JsonSerializable):
     sla_object: SlaObject
     team_priority: UUID
     team_priority_object: TeamPriorityObject
+    parent_incident: None
+    is_parent_incident: bool
+    snooze_time: None
+    snoozed_till: None
+    postmortems: List[Any]
+    postmortem_assignee: None
+    is_child_incident: bool
 
     def __init__(
         self,
@@ -285,6 +285,13 @@ class Incident(JsonSerializable):
         sla_object: SlaObject,
         team_priority: UUID,
         team_priority_object: TeamPriorityObject,
+        parent_incident: None,
+        is_parent_incident: bool,
+        snooze_time: None,
+        snoozed_till: None,
+        postmortems: List[Any],
+        postmortem_assignee: None,
+        is_child_incident: bool = None,
     ) -> None:
         self.summary = summary
         self.incident_number = incident_number
@@ -295,22 +302,14 @@ class Incident(JsonSerializable):
         )
         self.status = status
         self.unique_id = unique_id
-        self.service_object = (
-            service_object
-            if type(service_object) is not dict
-            else ServiceObject(**service_object)
-        )
+        self.service_object = service_object if type(service_object) is not dict else ServiceObject(**service_object)
         self.title = title
         self.incident_key = incident_key
         self.service = service if type(service) is not str else UUID(service)
         self.urgency = urgency
         self.merged_with = merged_with
         self.assigned_to = assigned_to
-        self.escalation_policy = (
-            escalation_policy
-            if type(escalation_policy) is not str
-            else UUID(escalation_policy)
-        )
+        self.escalation_policy = escalation_policy if type(escalation_policy) is not str else UUID(escalation_policy)
         self.escalation_policy_object = (
             escalation_policy_object
             if type(escalation_policy_object) is not dict
@@ -323,17 +322,20 @@ class Incident(JsonSerializable):
         self.context_window_end = context_window_end
         self.tags = tags
         self.sla = sla if type(sla) is not str else UUID(sla)
-        self.sla_object = (
-            sla_object if type(sla_object) is not dict else SlaObject(**sla_object)
-        )
-        self.team_priority = (
-            team_priority if type(team_priority) is not str else UUID(team_priority)
-        )
+        self.sla_object = sla_object if type(sla_object) is not dict else SlaObject(**sla_object)
+        self.team_priority = team_priority if type(team_priority) is not str else UUID(team_priority)
         self.team_priority_object = (
             team_priority_object
             if type(team_priority_object) is not dict
             else TeamPriorityObject(**team_priority_object)
         )
+        self.parent_incident = parent_incident
+        self.is_parent_incident = is_parent_incident
+        self.snooze_time = snooze_time
+        self.snoozed_till = snoozed_till
+        self.postmortems = postmortems
+        self.postmortem_assignee = postmortem_assignee
+        self.is_child_incident = is_child_incident
 
     def to_json(self):
         return json.dumps(self, default=serialize, sort_keys=True, indent=4)

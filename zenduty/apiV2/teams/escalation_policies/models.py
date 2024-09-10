@@ -16,6 +16,20 @@ class Target(JsonSerializable):
         return json.dumps(self, default=serialize, sort_keys=True, indent=4)
 
 
+class AssignmentSettings(JsonSerializable):
+    unique_id: UUID
+    assignee_strategy: int
+    assignment_index: int
+
+    def __init__(self, unique_id: Union[UUID, str], assignee_strategy: int, assignment_index: int) -> None:
+        self.unique_id = unique_id if type(unique_id) is not str else UUID(unique_id)
+        self.assignee_strategy = assignee_strategy
+        self.assignment_index = assignment_index
+
+    def to_json(self):
+        return json.dumps(self, default=serialize, sort_keys=True, indent=4)
+
+
 class Rule(JsonSerializable):
     delay: int
     targets: list[Target]
@@ -30,11 +44,7 @@ class Rule(JsonSerializable):
         unique_id: Union[UUID, str],
     ) -> None:
         self.delay = delay
-        self.targets = (
-            targets
-            if type(targets) is not list[dict]
-            else [Target(**l) for l in targets]
-        )
+        self.targets = targets if type(targets) is not list[dict] else [Target(**l) for l in targets]
         self.position = position
         self.unique_id = unique_id if type(unique_id) is not str else UUID(unique_id)
 
@@ -52,6 +62,8 @@ class EscalationPolicy(JsonSerializable):
     repeat_policy: int
     move_to_next: bool
     global_ep: bool
+    connections: int
+    assignment_settings: AssignmentSettings
 
     def __init__(
         self,
@@ -64,18 +76,20 @@ class EscalationPolicy(JsonSerializable):
         repeat_policy: int,
         move_to_next: bool,
         global_ep: bool,
+        connections: int,
+        assignment_settings: AssignmentSettings,
     ) -> None:
         self.name = name
         self.summary = summary
         self.description = description
-        self.rules = (
-            rules if type(rules) is not list[dict] else [Rule(**l) for l in rules]
-        )
+        self.rules = rules if type(rules) is not list[dict] else [Rule(**l) for l in rules]
         self.unique_id = unique_id if type(unique_id) is not str else UUID(unique_id)
         self.team = team if type(team) is not str else UUID(team)
         self.repeat_policy = repeat_policy
         self.move_to_next = move_to_next
         self.global_ep = global_ep
+        self.connections = connections
+        self.assignment_settings = assignment_settings
 
     def to_json(self):
         return json.dumps(self, default=serialize, sort_keys=True, indent=4)

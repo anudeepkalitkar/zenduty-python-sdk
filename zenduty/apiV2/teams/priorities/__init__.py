@@ -34,15 +34,12 @@ class PriorityClient:
         """
         response = self._client.execute(
             method=ZendutyClientRequestMethod.GET,
-            endpoint="/api/account/teams/%s/priority/%s/"
-            % (str(self._team.unique_id), str(priority_id)),
+            endpoint="/api/account/teams/%s/priority/%s/" % (str(self._team.unique_id), str(priority_id)),
             success_code=200,
         )
         return Priority(**response)
 
-    def create_priority(
-        self, name: str, description: str, color: str, **kwargs
-    ) -> Priority:
+    def create_priority(self, name: str = None, description: str = None, color: str = None) -> Priority:
         """Create a priority for a team
 
         Args:
@@ -65,7 +62,9 @@ class PriorityClient:
         )
         return Priority(**response)
 
-    def update_priority(self, priority: Priority) -> Priority:
+    def update_priority(
+        self, priority: Priority, name: str = None, description: str = None, color: str = None
+    ) -> Priority:
         """Update a priority object
 
         Args:
@@ -74,11 +73,15 @@ class PriorityClient:
         Returns:
             Priority: updated priority object
         """
+        request_payload = {
+            "name": name,
+            "description": description,
+            "color": color,
+        }
         response = self._client.execute(
             method=ZendutyClientRequestMethod.PUT,
-            endpoint="/api/account/teams/%s/priority/%s/"
-            % (str(self._team.unique_id), str(priority.unique_id)),
-            request_payload=json.loads(priority.to_json()),
+            endpoint="/api/account/teams/%s/priority/%s/" % (str(self._team.unique_id), str(priority.unique_id)),
+            request_payload=request_payload,
             success_code=200,
         )
         return Priority(**response)
@@ -91,7 +94,6 @@ class PriorityClient:
         """
         self._client.execute(
             method=ZendutyClientRequestMethod.DELETE,
-            endpoint="/api/account/teams/%s/priority/%s/"
-            % (str(self._team.unique_id), str(priority.unique_id)),
+            endpoint="/api/account/teams/%s/priority/%s/" % (str(self._team.unique_id), str(priority.unique_id)),
             success_code=204,
         )

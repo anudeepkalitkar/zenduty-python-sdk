@@ -34,8 +34,7 @@ class TagClient:
         """
         response = self._client.execute(
             method=ZendutyClientRequestMethod.GET,
-            endpoint="/api/account/teams/%s/tags/%s/"
-            % (str(self._team.unique_id), str(tags_id)),
+            endpoint="/api/account/teams/%s/tags/%s/" % (str(self._team.unique_id), str(tags_id)),
             success_code=200,
         )
         return Tag(**response)
@@ -61,7 +60,7 @@ class TagClient:
         )
         return Tag(**response)
 
-    def update_tag(self, tag: Tag) -> Tag:
+    def update_tag(self, tag: Tag, name: str, color: str, **kwargs) -> Tag:
         """Update a tag
 
         Args:
@@ -70,11 +69,14 @@ class TagClient:
         Returns:
             Tag: _description_
         """
+        request_payload = {
+            "name": name,
+            "color": color,
+        }
         response = self._client.execute(
             method=ZendutyClientRequestMethod.PUT,
-            endpoint="/api/account/teams/%s/tags/%s/"
-            % (str(self._team.unique_id), str(tag.unique_id)),
-            request_payload=json.loads(tag.to_json()),
+            endpoint="/api/account/teams/%s/tags/%s/" % (str(self._team.unique_id), str(tag.unique_id)),
+            request_payload=request_payload,
             success_code=200,
         )
         return Tag(**response)
@@ -87,7 +89,6 @@ class TagClient:
         """
         self._client.execute(
             method=ZendutyClientRequestMethod.DELETE,
-            endpoint="/api/account/teams/%s/tags/%s/"
-            % (str(self._team.unique_id), str(tag.unique_id)),
+            endpoint="/api/account/teams/%s/tags/%s/" % (str(self._team.unique_id), str(tag.unique_id)),
             success_code=204,
         )

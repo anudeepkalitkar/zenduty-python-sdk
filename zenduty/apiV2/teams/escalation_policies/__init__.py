@@ -2,7 +2,7 @@ import json
 from uuid import UUID
 from ...client import ZendutyClient, ZendutyClientRequestMethod
 from .._models import Team
-from .models import EscalationPolicy
+from .models import EscalationPolicy, Rule
 
 
 class EscalationPolicyClient:
@@ -18,8 +18,7 @@ class EscalationPolicyClient:
         """
         response = self._client.execute(
             method=ZendutyClientRequestMethod.GET,
-            endpoint="/api/account/teams/%s/escalation_policies/"
-            % str(self._team.unique_id),
+            endpoint="/api/account/teams/%s/escalation_policies/" % str(self._team.unique_id),
             success_code=200,
         )
         return [EscalationPolicy(**r) for r in response]
@@ -35,41 +34,39 @@ class EscalationPolicyClient:
         """
         response = self._client.execute(
             method=ZendutyClientRequestMethod.GET,
-            endpoint="/api/account/teams/%s/escalation_policies/%s/"
-            % (str(self._team.unique_id), str(esp_id)),
+            endpoint="/api/account/teams/%s/escalation_policies/%s/" % (str(self._team.unique_id), str(esp_id)),
             success_code=200,
         )
         return EscalationPolicy(**response)
 
     def create_esp(
-        self, name: str, description: str, summary: str, rules: list[dict]
+        self, name: str, rules: list[Rule], summary: str = None, description: str = None
     ) -> EscalationPolicy:
         """Create a new escalation policy by given details
 
         Args:
             name (str): Name of the new escalation policy
-            description (str): description of the new escalation policy
-            summary (str): summary of the new escalation policy
-            rules (list[dict]): Rules of the new escalation policy. see RuleBuilder class.
+            rules (list[Rule]): Rules of the new escalation policy. see RuleBuilder class.
 
         Returns:
             EscalationPolicy: created escalation policy object
         """
         response = self._client.execute(
             method=ZendutyClientRequestMethod.POST,
-            endpoint="/api/account/teams/%s/escalation_policies/"
-            % str(self._team.unique_id),
+            endpoint="/api/account/teams/%s/escalation_policies/" % str(self._team.unique_id),
             request_payload={
                 "name": name,
+                "rules": rules,
                 "summary": summary,
                 "description": description,
-                "rules": rules,
             },
             success_code=201,
         )
         return EscalationPolicy(**response)
 
-    def update_esp(self, esp: EscalationPolicy) -> EscalationPolicy:
+    def update_esp(
+        self, esp: EscalationPolicy, name: str, rules: list[Rule], summary: str = None, description: str = None
+    ) -> EscalationPolicy:
         """Update an escalation policy
 
         Args:
@@ -78,11 +75,17 @@ class EscalationPolicyClient:
         Returns:
             EscalationPolicy: Updated escalation policy
         """
+        request_payload = {
+            "name": name,
+            "rules": rules,
+            "summary": summary,
+            "description": description,
+        }
         response = self._client.execute(
             method=ZendutyClientRequestMethod.PUT,
             endpoint="/api/account/teams/%s/escalation_policies/%s/"
             % (str(self._team.unique_id), str(esp.unique_id)),
-            request_payload=json.loads(esp.to_json()),
+            request_payload=request_payload,
             success_code=200,
         )
         return EscalationPolicy(**response)

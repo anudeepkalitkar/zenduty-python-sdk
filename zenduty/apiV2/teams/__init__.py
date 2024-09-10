@@ -2,7 +2,7 @@ from .maintenance import TeamMaintenanceClient
 from .oncall.models import OnCall
 from .postmortem import PostmortemClient
 from .priorities import PriorityClient
-from .roles import IncidentRole, IncidentRoleClient
+from .roles import IncidentRoleClient
 from .sla import SLAClient
 from .tags import TagClient
 from .task_templates import TaskTemplateClient
@@ -174,7 +174,7 @@ class TeamsClient:
         )
         return Team(**response)
 
-    def update_team(self, team: Team) -> Team:
+    def update_team(self, team: Team, name: str) -> Team:
         """The team that has to be updated
 
         Args:
@@ -187,7 +187,7 @@ class TeamsClient:
             method=ZendutyClientRequestMethod.PUT,
             endpoint=f"/api/account/teams/{str(team.unique_id)}/",
             request_payload={
-                "name": team.name,
+                "name": name,
             },
             success_code=200,
         )
@@ -217,13 +217,12 @@ class TeamsClient:
         """
         response = self._client.execute(
             method=ZendutyClientRequestMethod.GET,
-            endpoint="/api/account/teams/%s/members/%s/"
-            % (str(team.unique_id), member_unique_id),
+            endpoint="/api/account/teams/%s/members/%s/" % (str(team.unique_id), member_unique_id),
             success_code=200,
         )
         return Member(**response)
 
-    def update_team_member_role(self, team: Team, member_id: UUID, role: int) -> Member:
+    def update_team_member(self, team: Team, member_id: UUID, role: int) -> Member:
         """Makes updates to the member object's roles.
 
         Args:
@@ -271,8 +270,7 @@ class TeamsClient:
         """
         self._client.execute(
             method=ZendutyClientRequestMethod.DELETE,
-            endpoint="/api/account/teams/%s/members/%s/"
-            % (str(team.unique_id), str(member_id)),
+            endpoint="/api/account/teams/%s/members/%s/" % (str(team.unique_id), str(member_id)),
             success_code=204,
         )
 

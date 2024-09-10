@@ -40,27 +40,55 @@ class AccountMemberClient:
                     "role": role,
                 },
             },
-            success_code=200,
+            success_code=201,
         )
         return self.get_account_member(response["user"]["username"])
 
-    def update_account_member(self, account_member: AccountMember) -> AccountMember:
-        """update account member information
+    def update_account_member(
+        self,
+        account_member: AccountMember,
+        first_name: str = None,
+        last_name: str = None,
+        role: int = None,
+        email: str = None,
+    ) -> AccountMember:
+        """Update account member information with optional fields
 
         Args:
-            account_member (AccountMember): updated account member information
+            account_member_id (str): The ID of the account member to update
+            first_name (str, optional): New first name for the account member. Defaults to None.
+            last_name (str, optional): New last name for the account member. Defaults to None.
+            role (int, optional): New role for the account member. Defaults to None.
 
         Returns:
-            AccountMember: return the updated account memmber information from server
+            AccountMember: Updated account member information from the server
         """
-        payload = json.loads(account_member.to_json())
-        payload["user"].pop("email")
+        # Fetch current account member details
+
+        # Prepare the user part of the request payload
+        user_payload = {
+            "username": account_member.user.username,
+            "first_name": first_name if first_name is not None else account_member.user.first_name,
+            "last_name": last_name if last_name is not None else account_member.user.last_name,
+        }
+
+        # Initialize the request payload with the user information
+        request_payload = {"user": user_payload}
+
+        # Add role to the payload if provided
+        if role is not None:
+            request_payload["role"] = role
+        else:
+            request_payload["role"] = account_member.role
+        # Execute the update request
         response = self._client.execute(
             method=ZendutyClientRequestMethod.PUT,
-            endpoint="/api/account/members/%s/" % account_member.user.username,
-            request_payload=payload,
+            endpoint=f"/api/account/members/{account_member.user.username}/",
+            request_payload=request_payload,
             success_code=200,
         )
+
+        # Return the updated account member
         return AccountMember(**response)
 
     def get_account_member(self, account_member_id: str) -> AccountMember:

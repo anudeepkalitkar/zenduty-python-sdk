@@ -47,8 +47,7 @@ class ServiceClient:
         """
         response = self._client.execute(
             method=ZendutyClientRequestMethod.GET,
-            endpoint="/api/account/teams/%s/services/%s/"
-            % (str(self._team.unique_id), str(service_id)),
+            endpoint="/api/account/teams/%s/services/%s/" % (str(self._team.unique_id), str(service_id)),
             success_code=200,
         )
         return Service(**response)
@@ -56,13 +55,12 @@ class ServiceClient:
     def create_service(
         self,
         name: str,
-        summary: str,
-        description: str,
         escalation_policy: UUID,
-        team: UUID,
         sla: UUID,
         team_priority: UUID,
-        task_template: UUID,
+        summary: str = None,
+        description: str = None,
+        task_template: UUID = None,
         auto_resolve_timeout: int = 0,
         acknowledgement_timeout: int = 0,
         status: int = 1,
@@ -105,7 +103,6 @@ class ServiceClient:
                 "acknowledgement_timeout": acknowledgement_timeout,
                 "status": status,
                 "escalation_policy": escalation_policy,
-                "team": team,
                 "sla": sla,
                 "under_maintenance": under_maintenance,
                 "collation": collation,
@@ -115,7 +112,23 @@ class ServiceClient:
         )
         return Service(**response)
 
-    def update_service(self, service: Service) -> Service:
+    def update_service(
+        self,
+        service: Service,
+        name: str,
+        escalation_policy: UUID,
+        sla: UUID,
+        team_priority: UUID,
+        summary: str = None,
+        description: str = None,
+        task_template: UUID = None,
+        auto_resolve_timeout: int = 0,
+        acknowledgement_timeout: int = 0,
+        status: int = 1,
+        under_maintenance: bool = False,
+        collation: int = 0,
+        collation_time: int = 0,
+    ) -> Service:
         """Update a service
 
         Args:
@@ -124,11 +137,44 @@ class ServiceClient:
         Returns:
             Service: updated service object
         """
+        if summary is None:
+            summary = service.summary
+        if description is None:
+            description = service.description
+        if task_template is None:
+            task_template = service.task_template
+        if auto_resolve_timeout is None:
+            auto_resolve_timeout = service.auto_resolve_timeout
+        if acknowledgement_timeout is None:
+            acknowledgement_timeout = service.acknowledgement_timeout
+        if status is None:
+            status = service.status
+        if under_maintenance is None:
+            under_maintenance = service.under_maintenance
+        if collation is None:
+            collation = service.collation
+        if collation_time is None:
+            collation_time = service.collation_time
+
+        request_payload = {
+            "name": name,
+            "summary": summary,
+            "description": description,
+            "auto_resolve_timeout": auto_resolve_timeout,
+            "team_priority": team_priority,
+            "task_template": task_template,
+            "acknowledgement_timeout": acknowledgement_timeout,
+            "status": status,
+            "escalation_policy": escalation_policy,
+            "sla": sla,
+            "under_maintenance": under_maintenance,
+            "collation": collation,
+            "collation_time": collation_time,
+        }
         response = self._client.execute(
             method=ZendutyClientRequestMethod.PUT,
-            endpoint="/api/account/teams/%s/services/%s/"
-            % (str(self._team.unique_id), str(service.unique_id)),
-            request_payload=json.loads(service.to_json()),
+            endpoint="/api/account/teams/%s/services/%s/" % (str(self._team.unique_id), str(service.unique_id)),
+            request_payload=request_payload,
             success_code=200,
         )
         return Service(**response)
@@ -141,7 +187,6 @@ class ServiceClient:
         """
         self._client.execute(
             method=ZendutyClientRequestMethod.DELETE,
-            endpoint="/api/account/teams/%s/services/%s/"
-            % (str(self._team.unique_id), str(service.unique_id)),
+            endpoint="/api/account/teams/%s/services/%s/" % (str(self._team.unique_id), str(service.unique_id)),
             success_code=204,
         )

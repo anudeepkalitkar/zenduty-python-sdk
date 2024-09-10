@@ -34,8 +34,7 @@ class ScheduleClient:
         """
         response = self._client.execute(
             method=ZendutyClientRequestMethod.GET,
-            endpoint="/api/account/teams/%s/schedules/%s/"
-            % (str(self._team.unique_id), str(schedule_id)),
+            endpoint="/api/account/teams/%s/schedules/%s/" % (str(self._team.unique_id), str(schedule_id)),
             success_code=200,
         )
         return Schedule(**response)
@@ -43,11 +42,11 @@ class ScheduleClient:
     def create_schedule(
         self,
         name: str,
-        description: str,
-        summary: str,
         timezone: str,
-        layers: list[dict],
-        overrides: list[dict],
+        description: str = None,
+        summary: str = None,
+        layers: list[dict] = [],
+        overrides: list[dict] = [],
     ) -> Schedule:
         """Create a schedule object
 
@@ -77,12 +76,39 @@ class ScheduleClient:
         )
         return Schedule(**response)
 
-    def update_schedule(self, schedule: Schedule) -> Schedule:
+    def update_schedule(
+        self,
+        schedule: Schedule,
+        name: str,
+        timezone: str = None,
+        description: str = None,
+        summary: str = None,
+        layers: list[dict] = None,
+        overrides: list[dict] = None,
+    ) -> Schedule:
+        if timezone is None:
+            timezone = schedule.time_zone
+        if description is None:
+            description = schedule.description
+        if summary is None:
+            summary = schedule.summary
+        if layers is None:
+            layers = schedule.layers
+        if overrides is None:
+            overrides = schedule.overrides
+
+        request_payload = {
+            "name": name,
+            "summary": summary,
+            "description": description,
+            "time_zone": timezone,
+            "layers": layers,
+            "overrides": overrides,
+        }
         response = self._client.execute(
             method=ZendutyClientRequestMethod.PUT,
-            endpoint="/api/account/teams/%s/schedules/%s/"
-            % (str(self._team.unique_id), str(schedule.unique_id)),
-            request_payload=json.loads(schedule.to_json()),
+            endpoint="/api/account/teams/%s/schedules/%s/" % (str(self._team.unique_id), str(schedule.unique_id)),
+            request_payload=request_payload,
             success_code=200,
         )
         return Schedule(**response)
@@ -90,7 +116,6 @@ class ScheduleClient:
     def delete_schedule(self, schedule: Schedule):
         self._client.execute(
             method=ZendutyClientRequestMethod.DELETE,
-            endpoint="/api/account/teams/%s/schedules/%s/"
-            % (str(self._team.unique_id), str(schedule.unique_id)),
+            endpoint="/api/account/teams/%s/schedules/%s/" % (str(self._team.unique_id), str(schedule.unique_id)),
             success_code=204,
         )

@@ -64,24 +64,48 @@ class AccountRoleClient:
         )
         return [AccountRole(**r) for r in response]
 
-    def update_account_role(self, account_role: AccountRole) -> AccountRole:
-        """Update account role object
+    def update_account_role(
+        self,
+        account_role: AccountRole,
+        permissions: list[str],
+        name: str = None,
+        description: str = None,
+    ) -> AccountRole:
+        """Update account role object with optional fields
 
         Args:
-            account_role (AccountRole): updated information about a account role
+            account_role_id (str): The ID of the account role to update
+            name (str, optional): New name for the account role. Defaults to None.
+            description (str, optional): New description for the account role. Defaults to None.
+            permissions (list[str], optional): New permissions for the account role. Defaults to None.
 
         Returns:
-            AccountRole: updated information about a account role
+            AccountRole: Updated information about the account role
         """
+        # Fetch current account role details
+
+        # Prepare the request payload with either new values or existing ones
+        request_payload = {
+            "name": name if name is not None else account_role.name,
+            "description": description if description is not None else account_role.description,
+            "permissions": permissions if permissions is not None else account_role.permissions,
+        }
+
+        # Execute the update request
         response = self._client.execute(
             method=ZendutyClientRequestMethod.PUT,
-            endpoint="/api/account/customroles/%s/" % str(account_role.unique_id),
-            request_payload=json.loads(account_role.to_json()),
+            endpoint=f"/api/account/customroles/{account_role.unique_id}/",
+            request_payload=request_payload,
             success_code=200,
         )
+
+        # Return the updated account role
         return self.get_account_role(response["unique_id"])
 
-    def delete_account_role(self, account_role: AccountRole) -> None:
+    def delete_account_role(
+        self,
+        account_role: AccountRole,
+    ) -> None:
         """Delete account role
 
         Args:
@@ -89,6 +113,6 @@ class AccountRoleClient:
         """
         self._client.execute(
             method=ZendutyClientRequestMethod.DELETE,
-            endpoint=f"/api/account/customroles/{str(account_role.unique_id)}/",
+            endpoint=f"/api/account/customroles/{account_role.unique_id}/",
             success_code=204,
         )
