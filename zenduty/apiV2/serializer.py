@@ -3,7 +3,7 @@ from datetime import datetime
 from uuid import UUID
 
 
-class JsonSerializable(object):
+class JsonSerializable:
     def to_json(self):
         return json.dumps(self, default=serialize, sort_keys=True, indent=4)
 
@@ -19,8 +19,5 @@ def serialize(o):
         return o.isoformat()
     elif type(o) is UUID:
         return str(o)
-    # elif isinstance(o, MappingProxyType):
-    #     print(o)
-    #     return o
     else:
         return o.__dict__

@@ -71,7 +71,7 @@ class APIException(Exception):
 
 
 class ZendutyClient:
-    """Zenduty client acts as a adapter for Zenduty APIs
+    """Zenduty client acts as an adapter for Zenduty APIs
 
     Raises:
         APIException: thrown when the api responds back with a non success code
@@ -94,10 +94,11 @@ class ZendutyClient:
 
         Raises:
             ValueError: thrown when invalid credentials are supplied
-            ValueError: thown when incorrect base url is supplied
+            ValueError: thrown when incorrect base url is supplied
         """
         if credential is None:
             raise ValueError("error: credential must not be None")
+
         elif not regex.match(
             "^([a-zA-Z0-9\-]+\.)*[a-zA-Z0-9\-]+\.[a-zA-Z0-9\-]+$", base_url
         ):
@@ -130,7 +131,7 @@ class ZendutyClient:
             APIException: Throws exception when request is not successful
 
         Returns:
-            Union[list[dict], dict]: resutls relavant parsed json payload
+            Union[list[dict], dict]: results relevant parsed json payload
         """
         req = requests.PreparedRequest()
         req.prepare_url(f"{self._url}{endpoint}", query_params)
