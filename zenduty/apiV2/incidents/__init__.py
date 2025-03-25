@@ -1,9 +1,9 @@
 from uuid import UUID
-from .notes import IncidentNoteClient
-from .tags import IncidentTagClient
-from ..client import ZendutyClient, ZendutyClientRequestMethod
 from .models import Incident
-from ..events.models import Event
+from .tags import IncidentTagClient
+from .notes import IncidentNoteClient
+from zenduty.apiV2.events import Event
+from zenduty.apiV2.client import ZendutyClient, ZendutyClientRequestMethod
 
 
 class IncidentClient:
@@ -90,7 +90,11 @@ class IncidentClient:
             request_payload=payload,
             success_code=200,
         )
-        return response.get("results", [])
+        incidents = []
+        for incident  in response.get('results',[]):
+            incidents.append(self.get_incident_by_unique_id_or_incident_number(incident['incident_number']))
+            
+        return incidents
 
     def get_incident_by_unique_id_or_incident_number(self, incident_id: str) -> Incident:
         """Return a Incident by its unique_id

@@ -14,9 +14,8 @@ $ git clone https://github.com/Zenduty/zenduty-python-sdk
 $ python3 setup.py install
 ```
 ## Contents
-1) zenduty/api : contains the functions to communicate with zenduty API endpoints
+1) zenduty/apiV2 : contains the functions to communicate with zenduty API endpoints
 2) zenduty/    : contains the common required files
-3) bin/		   : contains sample script to run zenduty functions
 
 ## Getting started
 
