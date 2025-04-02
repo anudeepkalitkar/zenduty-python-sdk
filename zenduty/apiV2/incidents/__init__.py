@@ -5,7 +5,6 @@ from .notes import IncidentNoteClient
 from zenduty.apiV2.events import Event
 from zenduty.apiV2.client import ZendutyClient, ZendutyClientRequestMethod
 
-
 class IncidentClient:
     def __init__(self, client: ZendutyClient):
         """The constructor for an incident client
@@ -90,11 +89,22 @@ class IncidentClient:
             request_payload=payload,
             success_code=200,
         )
-        incidents = []
-        for incident  in response.get('results',[]):
-            incidents.append(self.get_incident_by_unique_id_or_incident_number(incident['incident_number']))
-            
-        return incidents
+        for incident in response.get("results", []):
+            incident['summary'] = ""
+            incident['incident_key'] = ""
+            incident['service'] = None
+            incident['urgency'] = 0
+            incident['merged_with'] = None
+            incident['escalation_policy'] = None
+            incident['escalation_policy_object'] = None
+            incident['context_window_start'] = None
+            incident['context_window_end'] = None
+            incident['team_priority'] = None
+            incident['parent_incident'] = None
+            incident['postmortem_assignee'] = None
+            incident['service_object'] = None
+
+        return [Incident(**incident) for incident in response.get("results", [])]
 
     def get_incident_by_unique_id_or_incident_number(self, incident_id: str) -> Incident:
         """Return a Incident by its unique_id
@@ -112,7 +122,7 @@ class IncidentClient:
         )
         return Incident(**response)
 
-    def create_incident(self, title: str, service: UUID) -> Incident:
+    def create_incident(self, title: str, service: UUID, summary: str = None, escalation_policy: UUID = None, assigned_to: str = None,  sla: str = None, team_priority: str = None) -> Incident:
         """Create a new incident
 
         Args:
@@ -128,10 +138,21 @@ class IncidentClient:
         Returns:
             Incident: Incident object created
         """
+        request_payload={"title": title, "service": (service)}
+        if summary:
+            request_payload["summary"] = summary
+        if assigned_to:
+            request_payload["assigned_to"] = assigned_to
+        if escalation_policy:
+            request_payload["escalation_policy"] = escalation_policy
+        if sla:
+            request_payload["sla"] = sla
+        if team_priority:
+            request_payload["team_priority"] = team_priority
         response = self._client.execute(
             method=ZendutyClientRequestMethod.POST,
             endpoint="/api/incidents/",
-            request_payload={"title": title, "service": (service)},
+            request_payload=request_payload,
             success_code=201,
         )
         return Incident(**response)
